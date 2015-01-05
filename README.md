@@ -8,7 +8,8 @@ Thumbilina is a command line interface (CLI) thumbnail generator that operates o
 Details
 -------
 
-* Usage information is available [here](https://github.com/zkxs/thumbelina/wiki/Usage)
+* Usage information is available [here](https://github.com/zkxs/thumbelina/wiki/Usage).
+* This program requires Java SE 8 to run. [Get Java](https://www.java.com/)
 * Transparency is removed and replaced with white.
 * Bicubic interpolation is used in the scaling operation.
 
@@ -19,6 +20,8 @@ Planned features
 * Scaling to height
 * Option to select background color (for removing transparency)
 * Option to select depth of folder traversal
+ 
+All of the above enhancements have corresponding issues [here](https://github.com/zkxs/thumbelina/issues). Please leave a comment on the issue if you'd in seeing that feature implemented. This will allow me to gauge interest in the different features.
 
 Developers
 ----------
