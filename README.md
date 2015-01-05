@@ -12,6 +12,7 @@ Details
 * This program requires Java SE 8 to run. [Get Java](https://www.java.com/)
 * Transparency is removed and replaced with white.
 * Bicubic interpolation is used in the scaling operation.
+* If an input image is small enough that it does not need downscaling, a symlink with the standard thumbnail filename is created pointing to the original file.
 
 Planned features
 ----------------
