@@ -161,23 +161,6 @@ public class Thumbelina
 		return after;
 	}
 	
-	private static BufferedImage awtScale(BufferedImage before, int maxWidth)
-	{
-		double scaleFactor = ((double)maxWidth) / before.getWidth();
-		
-		Image img = before.getScaledInstance(maxWidth, (int)(before.getHeight() * scaleFactor), BufferedImage.SCALE_SMOOTH);
-		
-		// Create a buffered image with transparency
-	    BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_RGB);
-
-	    // Draw the image on to the buffered image
-	    Graphics2D bGr = bimage.createGraphics();
-	    bGr.drawImage(img, 0, 0, null);
-	    bGr.dispose();
-		
-		return bimage;
-	}
-	
 	private static Path getPath(String directory)
 	{
 		Path path = Paths.get(directory);
