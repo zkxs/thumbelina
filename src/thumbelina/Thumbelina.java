@@ -29,9 +29,9 @@ public class Thumbelina
 		String directory = (String) options.get("directory");
 		int maxWidth = (Integer) options.get("maxWidth");
 		
-		System.out.printf("Quality = %f\n", quality);
-		System.out.printf("Max Width = %d\n", maxWidth);
-		System.out.printf("Directory = \"%s\"\n", directory);
+//		System.out.printf("Quality = %f\n", quality);
+//		System.out.printf("Max Width = %d\n", maxWidth);
+//		System.out.printf("Directory = \"%s\"\n", directory);
 		
 		Path path = getPath(directory);
 		
