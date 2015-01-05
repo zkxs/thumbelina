@@ -3,17 +3,14 @@ package thumbelina;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Hashtable;
 
 import javax.imageio.IIOImage;
@@ -48,16 +45,14 @@ public class Thumbelina
 		}
 	}
 	
-	private static void processFile(Path p, float quality, int maxWidth)
+	private static void processFile(Path inputPath, float quality, int maxWidth)
 	{
-		System.out.printf("Found: %s\n", p.toString());
-		if (!Files.isRegularFile(p)) return;
-		System.out.printf("It's a file: %s\n", p.toString());
+		if (!Files.isRegularFile(inputPath)) return;
 		
 		try
 		{
 			BufferedImage inputImage = null;
-			try (InputStream in = Files.newInputStream(p))
+			try (InputStream in = Files.newInputStream(inputPath))
 			{
 				inputImage = ImageIO.read(in);
 			}
@@ -67,16 +62,15 @@ public class Thumbelina
 				// stream could not be read as an image
 				return;
 			}
-			System.out.printf("It's an image: %s\n", p.toString());
 			
-			String inputFilename = p.getFileName().toString();
+			String inputFilename = inputPath.getFileName().toString();
 			if (inputFilename.endsWith("_thumb.jpg"))
 			{
 				// already processed
 				return;
 			}
 			
-			System.out.printf("Processing: %s\n", p.toString());
+			//System.out.printf("Processing: %s\n", p.toString()); //TODO: verbose option
 			
 			// get output path
 			int idx = inputFilename.lastIndexOf('.');
@@ -91,7 +85,18 @@ public class Thumbelina
 				// '.' is last character
 				outputFilename = inputFilename.substring(0, idx) + "_thumb.jpg";
 			}
-			Path output = p.getParent().resolve(outputFilename);
+			Path outputPath = inputPath.getParent().resolve(outputFilename);
+			
+			// symlink check
+			if (Files.isSymbolicLink(outputPath))
+			{
+				Path link = Files.readSymbolicLink(outputPath);
+				if (Files.isSameFile(inputPath, link))
+				{
+					// outputPath is a link to inputPath, and should therefore be deleted
+					Files.delete(outputPath);
+				}
+			}
 			
 			
 			if (inputImage.getWidth() > maxWidth)
@@ -122,11 +127,8 @@ public class Thumbelina
 				jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 				jpgWriteParam.setCompressionQuality(quality);
 				
-				//OutputStream outputStream = Files.newOutputStream(output, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-				FileImageOutputStream outputStream = new FileImageOutputStream(output.toFile());
-				
-				//ImageIO.write(outputImage, "jpg", outputStream); // ignores quality
-				
+				// write image
+				FileImageOutputStream outputStream = new FileImageOutputStream(outputPath.toFile());
 				jpgWriter.setOutput(outputStream);
 				IIOImage outputIIOImage = new IIOImage(outputImage, null, null);
 				jpgWriter.write(null, outputIIOImage, jpgWriteParam);
@@ -136,8 +138,12 @@ public class Thumbelina
 			else
 			{
 				// image did not need scaling
-				//TODO: create a symlink
-
+				
+				if (Files.exists(outputPath))
+					Files.delete(outputPath);
+				
+				// create a symlink
+				Files.createSymbolicLink(outputPath, inputPath);
 			}
 		}
 		catch (IOException e)
