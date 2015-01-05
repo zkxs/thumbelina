@@ -5,27 +5,21 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Hashtable;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileImageOutputStream;
 
 public class Thumbelina
-{	
-	private static ImageWriteParam jpgWriteParam;
-	
-	// static initialization block
-	{
-		ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-		jpgWriteParam = jpgWriter.getDefaultWriteParam();
-		jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		jpgWriteParam.setCompressionQuality(0.7f);
-	}
-	
+{
 	public static void main(String[] args)
 	{
 		Hashtable<String, Object> options = processArgs(args);
@@ -42,7 +36,7 @@ public class Thumbelina
 		
 		try
 		{
-			Files.walk(path).parallel().forEach(p -> processFile(p, maxWidth));
+			Files.walk(path, 1).forEach(p -> processFile(p, quality, maxWidth));
 		}
 		catch (IOException e)
 		{
@@ -50,8 +44,11 @@ public class Thumbelina
 		}
 	}
 	
-	public static void processFile(Path p, int maxWidth)
+	public static void processFile(Path p, float quality, int maxWidth)
 	{
+		if (!Files.isRegularFile(p)) return;
+		System.out.printf("Processing: %s\n", p.toString());
+		
 		try
 		{
 			BufferedImage inputImage = null;
@@ -59,11 +56,26 @@ public class Thumbelina
 			{
 				inputImage = ImageIO.read(in);
 			}
+			
+			if (inputImage == null)
+			{
+				// stream could not be read as an image
+				return;
+			}
+			
+			String inputFilename = p.getFileName().toString();
+			if (inputFilename.endsWith("_thumb.jpg"))
+			{
+				// already processed
+				return;
+			}
+			
+			System.out.printf("Processing: %s for realsies\n", p.toString());
+			
 			BufferedImage outputImage = scale(inputImage, maxWidth);
 			inputImage = null;
 			
 			// get output path
-			String inputFilename = p.getFileName().toString();
 			int idx = inputFilename.lastIndexOf('.');
 			String outputFilename;
 			if (idx == -1)
@@ -78,7 +90,20 @@ public class Thumbelina
 			}
 			Path output = p.getParent().resolve(outputFilename);
 			
-			//ImageIO.
+			// setup JPG writer
+			ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
+			ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
+			jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+			jpgWriteParam.setCompressionQuality(quality);
+			
+			//OutputStream outputStream = Files.newOutputStream(output, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+			FileImageOutputStream outputStream = new FileImageOutputStream(output.toFile());
+			
+			jpgWriter.setOutput(outputStream);
+			IIOImage outputIIOImage = new IIOImage(outputImage, null, null);
+			jpgWriter.write(null, outputIIOImage, jpgWriteParam);
+			jpgWriter.dispose();
+			outputStream.close();
 		}
 		catch (IOException e)
 		{
