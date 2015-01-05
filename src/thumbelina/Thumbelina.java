@@ -98,10 +98,9 @@ public class Thumbelina
 				}
 			}
 			
-			
+			// if cropping is required
 			if (inputImage.getWidth() > maxWidth)
 			{
-				//BufferedImage outputImage = scale(inputImage, maxWidth);
 				BufferedImage scaledImage = scale(inputImage, maxWidth);
 				inputImage = null;
 				
@@ -254,7 +253,7 @@ public class Thumbelina
 	{
 		System.out.println(
 				  "Usage:\n"
-				+ "    java -jar Thumbelina.jar [OPTIONS] {FOLDER}\n"
+				+ "    java -jar thumbelina.jar [OPTIONS] {FOLDER}\n"
 				+ "        Processes all images in FOLDER\n"
 				+ "    OPTIONS:\n"
 				+ "        -q PERCENT, --quality=PERCENT\n"
