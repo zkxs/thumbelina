@@ -1,5 +1,9 @@
 package thumbelina;
 
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -44,10 +48,11 @@ public class Thumbelina
 		}
 	}
 	
-	public static void processFile(Path p, float quality, int maxWidth)
+	private static void processFile(Path p, float quality, int maxWidth)
 	{
+		System.out.printf("Found: %s\n", p.toString());
 		if (!Files.isRegularFile(p)) return;
-		System.out.printf("Processing: %s\n", p.toString());
+		System.out.printf("It's a file: %s\n", p.toString());
 		
 		try
 		{
@@ -62,6 +67,7 @@ public class Thumbelina
 				// stream could not be read as an image
 				return;
 			}
+			System.out.printf("It's an image: %s\n", p.toString());
 			
 			String inputFilename = p.getFileName().toString();
 			if (inputFilename.endsWith("_thumb.jpg"))
@@ -70,10 +76,7 @@ public class Thumbelina
 				return;
 			}
 			
-			System.out.printf("Processing: %s for realsies\n", p.toString());
-			
-			BufferedImage outputImage = scale(inputImage, maxWidth);
-			inputImage = null;
+			System.out.printf("Processing: %s\n", p.toString());
 			
 			// get output path
 			int idx = inputFilename.lastIndexOf('.');
@@ -90,20 +93,52 @@ public class Thumbelina
 			}
 			Path output = p.getParent().resolve(outputFilename);
 			
-			// setup JPG writer
-			ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-			ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
-			jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-			jpgWriteParam.setCompressionQuality(quality);
 			
-			//OutputStream outputStream = Files.newOutputStream(output, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-			FileImageOutputStream outputStream = new FileImageOutputStream(output.toFile());
-			
-			jpgWriter.setOutput(outputStream);
-			IIOImage outputIIOImage = new IIOImage(outputImage, null, null);
-			jpgWriter.write(null, outputIIOImage, jpgWriteParam);
-			jpgWriter.dispose();
-			outputStream.close();
+			if (inputImage.getWidth() > maxWidth)
+			{
+				//BufferedImage outputImage = scale(inputImage, maxWidth);
+				BufferedImage scaledImage = scale(inputImage, maxWidth);
+				inputImage = null;
+				
+				BufferedImage outputImage;
+				if (scaledImage.getColorModel().hasAlpha())
+				{
+					// alpha channel must be removed
+					outputImage = new BufferedImage(scaledImage.getWidth(), scaledImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+					Graphics2D g = (Graphics2D) outputImage.getGraphics();
+					g.setComposite(AlphaComposite.Src);
+					g.drawImage(scaledImage, 0, 0, Color.WHITE, null);
+					g.dispose();
+					scaledImage = null;
+				}
+				else
+				{
+					outputImage = scaledImage;
+				}
+				
+				// setup JPG writer
+				ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
+				ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
+				jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+				jpgWriteParam.setCompressionQuality(quality);
+				
+				//OutputStream outputStream = Files.newOutputStream(output, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+				FileImageOutputStream outputStream = new FileImageOutputStream(output.toFile());
+				
+				//ImageIO.write(outputImage, "jpg", outputStream); // ignores quality
+				
+				jpgWriter.setOutput(outputStream);
+				IIOImage outputIIOImage = new IIOImage(outputImage, null, null);
+				jpgWriter.write(null, outputIIOImage, jpgWriteParam);
+				jpgWriter.dispose();
+				outputStream.close();
+			}
+			else
+			{
+				// image did not need scaling
+				//TODO: create a symlink
+
+			}
 		}
 		catch (IOException e)
 		{
@@ -111,26 +146,46 @@ public class Thumbelina
 		}
 	}
 	
-	public static BufferedImage scale(BufferedImage before, int maxWidth)
+	private static BufferedImage scale(BufferedImage before, int maxWidth)
 	{
 		int w = before.getWidth();
 		int h = before.getHeight();
-		BufferedImage after = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		
+		double scaleFactor = ((double)maxWidth) / w;
+		
+		BufferedImage after = new BufferedImage((int)(w * scaleFactor), (int)(h * scaleFactor), before.getType());
 		AffineTransform at = new AffineTransform();
-		at.scale(2.0, 2.0);
+		at.scale(scaleFactor, scaleFactor);
 		AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
 		after = scaleOp.filter(before, after);
 		return after;
 	}
 	
-	public static Path getPath(String directory)
+	private static BufferedImage awtScale(BufferedImage before, int maxWidth)
+	{
+		double scaleFactor = ((double)maxWidth) / before.getWidth();
+		
+		Image img = before.getScaledInstance(maxWidth, (int)(before.getHeight() * scaleFactor), BufferedImage.SCALE_SMOOTH);
+		
+		// Create a buffered image with transparency
+	    BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_RGB);
+
+	    // Draw the image on to the buffered image
+	    Graphics2D bGr = bimage.createGraphics();
+	    bGr.drawImage(img, 0, 0, null);
+	    bGr.dispose();
+		
+		return bimage;
+	}
+	
+	private static Path getPath(String directory)
 	{
 		Path path = Paths.get(directory);
 		if (!Files.isDirectory(path)) throw new IllegalArgumentException("Not a directory");
 		return path;
 	}
 	
-	public static Hashtable<String, Object> processArgs(String[] args)
+	private static Hashtable<String, Object> processArgs(String[] args)
 	{
 		if (args.length < 1)
 		{
@@ -161,7 +216,7 @@ public class Thumbelina
 					else if (arg.startsWith("--quality="))
 					{
 						String quality = arg.substring(arg.indexOf('=') + 1);
-						options.put("quality", Float.parseFloat(quality));
+						options.put("quality", Float.parseFloat(quality) / 100);
 					}
 					else if (arg.equals("-w"))
 					{
@@ -186,7 +241,7 @@ public class Thumbelina
 						switch (currentOption)
 						{
 							case "quality":
-								options.put(currentOption, Float.parseFloat(arg));
+								options.put(currentOption, Float.parseFloat(arg) / 100);
 								expectingParam = false;
 								break;
 							case "maxWidth":
@@ -209,15 +264,15 @@ public class Thumbelina
 		return options;
 	}
 	
-	public static void showUsage()
+	private static void showUsage()
 	{
 		System.out.println(
-				  "Usage:"
-				+ "    java -jar Thumbelina.jar [OPTIONS] {FOLDER}"
-				+ "        Processes all images in FOLDER"
-				+ "    OPTIONS:"
-				+ "        -q PERCENT, --quality=PERCENT"
-				+ "            set the output JPEG quality to PERCENT%. Is 75 by default.");
+				  "Usage:\n"
+				+ "    java -jar Thumbelina.jar [OPTIONS] {FOLDER}\n"
+				+ "        Processes all images in FOLDER\n"
+				+ "    OPTIONS:\n"
+				+ "        -q PERCENT, --quality=PERCENT\n"
+				+ "            set the output JPEG quality to PERCENT%. Is 75 by default.\n");
 		System.exit(1);
 	}
 }
