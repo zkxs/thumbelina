@@ -204,59 +204,56 @@ public class Thumbelina
 		{
 			String arg = args[i];
 			
-			if (arg.startsWith("-")) // then arg is probably an option
+			if (!expectingParam) // args should be an option
 			{
-				if (!expectingParam) // args should be an option
+				if (arg.equals("-q"))
 				{
-					if (arg.equals("-q"))
-					{
-						currentOption = "quality";
-						expectingParam = true;
-					}
-					else if (arg.startsWith("--quality="))
-					{
-						String quality = arg.substring(arg.indexOf('=') + 1);
-						options.put("quality", Float.parseFloat(quality) / 100);
-					}
-					else if (arg.equals("-w"))
-					{
-						currentOption = "maxWidth";
-						expectingParam = true;
-					}
-					else if (arg.startsWith("--width="))
-					{
-						String quality = arg.substring(arg.indexOf('=') + 1);
-						options.put("maxWidth", Integer.parseInt(quality));
-					}
-					else
-					{
-						// invalid argument
-						showUsage();
-					}
+					currentOption = "quality";
+					expectingParam = true;
 				}
-				else // args is a param
+				else if (arg.startsWith("--quality="))
 				{
-					try
+					String quality = arg.substring(arg.indexOf('=') + 1);
+					options.put("quality", Float.parseFloat(quality) / 100);
+				}
+				else if (arg.equals("-w"))
+				{
+					currentOption = "maxWidth";
+					expectingParam = true;
+				}
+				else if (arg.startsWith("--width="))
+				{
+					String quality = arg.substring(arg.indexOf('=') + 1);
+					options.put("maxWidth", Integer.parseInt(quality));
+				}
+				else
+				{
+					// invalid argument
+					showUsage();
+				}
+			}
+			else // args is a param
+			{
+				try
+				{
+					switch (currentOption)
 					{
-						switch (currentOption)
+						case "quality":
+							options.put(currentOption, Float.parseFloat(arg) / 100);
+							expectingParam = false;
+							break;
+						case "maxWidth":
 						{
-							case "quality":
-								options.put(currentOption, Float.parseFloat(arg) / 100);
-								expectingParam = false;
-								break;
-							case "maxWidth":
-							{
-								options.put(currentOption, Integer.parseInt(arg));
-								expectingParam = false;
-								break;
-							}
+							options.put(currentOption, Integer.parseInt(arg));
+							expectingParam = false;
+							break;
 						}
 					}
-					catch (NumberFormatException e)
-					{
-						// could not parse
-						showUsage();
-					}
+				}
+				catch (NumberFormatException e)
+				{
+					// could not parse
+					showUsage();
 				}
 			}
 		}
