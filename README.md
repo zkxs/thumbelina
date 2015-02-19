@@ -22,7 +22,7 @@ Planned features
 * Option to select background color (for removing transparency)
 * Option to select depth of folder traversal
  
-All of the above enhancements have corresponding issues [here](https://github.com/zkxs/thumbelina/issues). Please leave a comment on the issue if you'd in seeing that feature implemented. This will allow me to gauge interest in the different features.
+All of the above enhancements have corresponding issues [here](https://github.com/zkxs/thumbelina/issues). Please leave a comment on an issue if you'd like to see that feature implemented. This will allow me to gauge interest in different features.
 
 Developers
 ----------
