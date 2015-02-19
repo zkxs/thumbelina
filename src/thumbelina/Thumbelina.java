@@ -21,6 +21,8 @@ import javax.imageio.stream.FileImageOutputStream;
 
 public class Thumbelina
 {
+	private static final String VERSION = "0.1.1";
+	
 	public static void main(String[] args)
 	{
 		Hashtable<String, Object> options = processArgs(args);
