@@ -257,7 +257,9 @@ public class Thumbelina
 				+ "        Processes all images in FOLDER\n"
 				+ "    OPTIONS:\n"
 				+ "        -q PERCENT, --quality=PERCENT\n"
-				+ "            set the output JPEG quality to PERCENT%. Is 75 by default.\n");
+				+ "            set the output JPEG quality to PERCENT%. Is 75 by default.\n"
+				+ "        -w WIDTH, --width=WIDTH\n"
+				+ "            set the maximum thumbnail width in pixels. Is 400 by default.\n");
 		System.exit(1);
 	}
 }
