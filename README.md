@@ -3,7 +3,7 @@ thumbelina
 
 Thumbilina is a command line interface (CLI) thumbnail generator that operates on an entire folder of images. Thumbnails are output as JPEG files with configurable quality. Currently, the only downscaling method is to specify the maximum width you wish your thumbnails to have. Output files have "\_thumb" appended to their filename and their extension changed to "jpg". For example, "Image.png" would become "Image\_thumb.jpg". 
 
-### [Download thumbelina.jar](https://github.com/zkxs/thumbelina/raw/master/thumbelina.jar) version 0.1.1
+### [Download thumbelina.jar](https://github.com/zkxs/thumbelina/releases/download/v0.1.1/thumbelina.jar) version 0.1.1
 
 Details
 -------
